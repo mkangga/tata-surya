@@ -44,28 +44,31 @@ export const SidePanel: React.FC<SidePanelProps> = ({ planet, onClose, onFollow,
         </div>
 
         {/* Conditional Rendering based on type */}
-        {!isMoon ? (
+        {!isMoon ? (() => {
+          // Explicit cast for TS safety inside this block
+          const p = planet as PlanetConfig;
+          return (
           <>
             <div className="space-y-4">
               <h3 className="text-xs uppercase tracking-widest text-gray-500 font-bold border-b border-gray-800 pb-2">Statistik Utama</h3>
               
               <div className="grid grid-cols-2 gap-3">
-                <StatBox label="Jarak (AU)" value={(planet as PlanetConfig).distance.toString()} icon="fa-arrows-left-right" />
-                <StatBox label="Diameter" value={(planet as PlanetConfig).diameter} icon="fa-ruler-combined" />
-                <StatBox label="Suhu" value={(planet as PlanetConfig).temp} icon="fa-temperature-half" />
-                <StatBox label="Rotasi" value={(planet as PlanetConfig).dayLength} icon="fa-rotate" />
-                <StatBox label="Revolusi" value={(planet as PlanetConfig).yearLength} icon="fa-circle-notch" />
+                <StatBox label="Jarak (AU)" value={p.distance.toString()} icon="fa-arrows-left-right" />
+                <StatBox label="Diameter" value={p.diameter} icon="fa-ruler-combined" />
+                <StatBox label="Suhu" value={p.temp} icon="fa-temperature-half" />
+                <StatBox label="Rotasi" value={p.dayLength} icon="fa-rotate" />
+                <StatBox label="Revolusi" value={p.yearLength} icon="fa-circle-notch" />
               </div>
             </div>
 
             {/* Moon List (Only for Planets) */}
-            {(planet as PlanetConfig).moons && (planet as PlanetConfig).moons!.length > 0 && (
+            {p.moons && p.moons.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-xs uppercase tracking-widest text-gray-500 font-bold border-b border-gray-800 pb-2 flex items-center gap-2">
                   <i className="fas fa-moon text-[10px]"></i> Satelit Alami Utama
                 </h3>
                 <div className="space-y-3">
-                  {(planet as PlanetConfig).moons!.map((moon) => (
+                  {p.moons.map((moon) => (
                     <div key={moon.name} className="bg-white/5 p-3 rounded-lg border border-white/5 hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-2 mb-1">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: moon.color }}></div>
@@ -83,12 +86,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({ planet, onClose, onFollow,
                 <i className="fas fa-lightbulb text-yellow-400 mt-1"></i>
                 <div>
                   <h4 className="font-bold text-blue-200 text-sm mb-1">Tahukah Kamu?</h4>
-                  <p className="text-xs text-blue-100/80 leading-relaxed">{(planet as PlanetConfig).funFact}</p>
+                  <p className="text-xs text-blue-100/80 leading-relaxed">{p.funFact}</p>
                 </div>
               </div>
             </div>
           </>
-        ) : (
+          );
+        })() : (
            /* Moon View */
            <div className="space-y-4">
               <div className="bg-white/5 p-3 rounded-lg flex items-center gap-3">

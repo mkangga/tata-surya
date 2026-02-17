@@ -84,10 +84,6 @@ const SolarSystem: React.FC = () => {
             rtPlanet.angle += (config.speed * 0.002) * speedMultiplier;
             
             // ELLIPTICAL ORBIT CALCULATION
-            // r = (a * (1 - e^2)) / (1 + e * cos(theta))
-            // This is polar form relative to focus.
-            // Simplified for visualization: Use parametric equations x = a cos t, y = b sin t, then shift focus
-            
             const a = config.distance * AU_PIXELS; // Semi-major axis
             const e = config.eccentricity;
             const b = a * Math.sqrt(1 - e*e); // Semi-minor axis
@@ -98,14 +94,11 @@ const SolarSystem: React.FC = () => {
             let ey = b * Math.sin(rtPlanet.angle);
 
             // Shift so Sun (focus) is at (0,0)
-            // The sun is at one focus. If we use standard parametric, center is (0,0).
-            // We need to shift x by +c (or -c depending on perihelion orientation)
             rtPlanet.visualX = ex - c; 
             rtPlanet.visualY = ey;
             
             // Trail Logic
             if (rtPlanet.trail.length > 80) rtPlanet.trail.shift();
-            // Add point less frequently to improve performance and trail length visually
             if (Math.floor(Date.now() / 20) % 2 === 0) {
                 rtPlanet.trail.push({ x: rtPlanet.visualX, y: rtPlanet.visualY });
             }
@@ -144,7 +137,6 @@ const SolarSystem: React.FC = () => {
       ctx.fillStyle = '#020205'; 
       ctx.fillRect(0, 0, width, height);
       
-      // Subtle nebula gas effect
       const nebulaGrad = ctx.createRadialGradient(width/2, height/2, width * 0.2, width/2, height/2, width * 1.5);
       nebulaGrad.addColorStop(0, '#0a0b14');
       nebulaGrad.addColorStop(1, '#000000');
@@ -155,13 +147,12 @@ const SolarSystem: React.FC = () => {
       ctx.translate(cx + currentOffsetX, cy + currentOffsetY);
       ctx.scale(scale, scale);
 
-      // 2. Stars (with slight twinkle variation based on time if we wanted)
+      // 2. Stars
       const parallaxScale = Math.max(0.1, 1/scale);
       stars.forEach(star => {
         ctx.globalAlpha = star.opacity;
         ctx.fillStyle = star.color;
         ctx.beginPath();
-        // Simple parallax: divide coordinates by scale factor partially
         ctx.arc(star.x * parallaxScale, star.y * parallaxScale, star.size / scale, 0, Math.PI * 2);
         ctx.fill();
       });
@@ -171,10 +162,8 @@ const SolarSystem: React.FC = () => {
       ctx.fillStyle = '#555';
       asteroids.forEach(ast => {
         const r = ast.distance * AU_PIXELS;
-        // Simple circular approximation for asteroids for performance
         const x = Math.cos(ast.angle) * r;
         const y = Math.sin(ast.angle) * r;
-        
         ctx.globalAlpha = 0.6;
         ctx.beginPath();
         ctx.arc(x, y, (ast.size / scale), 0, Math.PI * 2);
@@ -182,11 +171,10 @@ const SolarSystem: React.FC = () => {
       });
       ctx.globalAlpha = 1.0;
 
-      // 4. Orbit Lines (Ellipses)
+      // 4. Orbit Lines
       ctx.lineWidth = Math.max(0.5, 0.5 / scale);
       ctx.strokeStyle = '#333';
       
-      // Pre-calculate orbit paths to draw ellipses correctly
       planetsRuntime.current.forEach((rtP, i) => {
           const config = PLANETS[i];
           if (config.type === 'planet') {
@@ -194,16 +182,14 @@ const SolarSystem: React.FC = () => {
             const e = config.eccentricity;
             const b = a * Math.sqrt(1 - e*e);
             const c = a * e;
-            
             ctx.beginPath();
             ctx.ellipse(-c, 0, a, b, 0, 0, Math.PI * 2);
             ctx.stroke();
           }
       });
 
-      // 5. Sun (Scientific Rendering)
+      // 5. Sun
       const sun = PLANETS[0];
-      // Corona (Outer Glow)
       const coronaGrad = ctx.createRadialGradient(0, 0, sun.radius, 0, 0, sun.radius * 4);
       coronaGrad.addColorStop(0, 'rgba(255, 200, 0, 0.4)');
       coronaGrad.addColorStop(0.5, 'rgba(255, 100, 0, 0.1)');
@@ -213,11 +199,10 @@ const SolarSystem: React.FC = () => {
       ctx.arc(0, 0, sun.radius * 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // Photosphere (Surface)
       const sunBodyGrad = ctx.createRadialGradient(0, 0, sun.radius * 0.2, 0, 0, sun.radius);
-      sunBodyGrad.addColorStop(0, '#FFF'); // Core
+      sunBodyGrad.addColorStop(0, '#FFF');
       sunBodyGrad.addColorStop(0.4, '#FDB813');
-      sunBodyGrad.addColorStop(1, '#FF8C00'); // Edge darkening
+      sunBodyGrad.addColorStop(1, '#FF8C00');
       ctx.fillStyle = sunBodyGrad;
       ctx.beginPath();
       ctx.arc(0, 0, sun.radius, 0, Math.PI * 2);
@@ -228,7 +213,6 @@ const SolarSystem: React.FC = () => {
         const config = PLANETS[index];
         if (config.type !== 'planet') return;
 
-        // Draw Orbital Trail
         if (rtPlanet.trail.length > 1) {
           ctx.beginPath();
           ctx.strokeStyle = config.color;
@@ -246,14 +230,12 @@ const SolarSystem: React.FC = () => {
         const y = rtPlanet.visualY;
         const radius = config.radius * PLANET_SCALE_FACTOR;
 
-        // --- DRAW PLANET ---
         ctx.save();
         ctx.translate(x, y);
 
-        // a. Atmosphere Glow (for Earth/Venus)
         if (config.name === 'Bumi' || config.name === 'Venus') {
             const atmoGrad = ctx.createRadialGradient(0, 0, radius, 0, 0, radius * 1.3);
-            atmoGrad.addColorStop(0, config.colors[2] + '88'); // Semi transparent
+            atmoGrad.addColorStop(0, (config.colors[2] || config.color) + '88');
             atmoGrad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = atmoGrad;
             ctx.beginPath();
@@ -261,11 +243,9 @@ const SolarSystem: React.FC = () => {
             ctx.fill();
         }
 
-        // b. Planet Surface (Pseudo-3D Gradient)
         const surfGrad = ctx.createLinearGradient(-radius, -radius, radius, radius);
-        // Using the colors array for banded planets like Jupiter
         if (config.colors.length > 2) {
-             const angle = Math.PI / 4; // Diagonal gradient
+             const angle = Math.PI / 4;
              const planetCtx = ctx.createLinearGradient(
                  -radius * Math.cos(angle), -radius * Math.sin(angle),
                  radius * Math.cos(angle), radius * Math.sin(angle)
@@ -282,21 +262,18 @@ const SolarSystem: React.FC = () => {
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
         ctx.fill();
         
-        // c. Saturn Rings (Scientific view)
         if (config.hasRing) {
              ctx.save();
-             ctx.rotate(Math.PI / 6); // Tilt
+             ctx.rotate(Math.PI / 6);
              ctx.beginPath();
-             ctx.strokeStyle = '#CDBA96'; // Ring color
+             ctx.strokeStyle = '#CDBA96';
              ctx.lineWidth = radius * 0.8;
              ctx.globalAlpha = 0.7;
-             // Elliptical ring
              ctx.ellipse(0, 0, radius * 2.2, radius * 0.6, 0, 0, Math.PI * 2);
              ctx.stroke();
              
-             // Gap (Cassini Division)
              ctx.beginPath();
-             ctx.strokeStyle = '#000'; // Black gap
+             ctx.strokeStyle = '#000';
              ctx.lineWidth = radius * 0.1;
              ctx.globalAlpha = 0.5;
              ctx.ellipse(0, 0, radius * 1.8, radius * 0.5, 0, 0, Math.PI * 2);
@@ -305,30 +282,22 @@ const SolarSystem: React.FC = () => {
              ctx.restore();
         }
 
-        // d. Terminator (Day/Night Shadow)
-        // Calculate angle to Sun (0,0)
-        // Since we translated to (x,y), Sun is at (-x, -y)
         const angleToSun = Math.atan2(-y, -x);
+        ctx.rotate(angleToSun);
         
-        ctx.rotate(angleToSun); // Rotate so "right" faces sun
-        
-        // Draw Shadow on the "left" side (away from sun)
         ctx.beginPath();
         ctx.fillStyle = 'rgba(0,0,0,0.75)';
-        // Draw a semi-circle for the dark side
         ctx.arc(0, 0, radius, Math.PI / 2, -Math.PI / 2); 
         ctx.fill();
 
-        // Soften the terminator line
         const shadowGrad = ctx.createLinearGradient(-radius/2, 0, radius/2, 0);
         shadowGrad.addColorStop(0, 'rgba(0,0,0,0.8)');
         shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = shadowGrad;
         ctx.fillRect(-radius/2, -radius, radius, radius*2);
 
-        ctx.restore(); // Undo planet-local translation
+        ctx.restore();
 
-        // --- DRAW MOONS ---
         if (config.moons && rtPlanet.moons && scale > 0.15) {
           config.moons.forEach((moon, mIndex) => {
             const mAngle = rtPlanet.moons[mIndex].angle;
@@ -340,7 +309,6 @@ const SolarSystem: React.FC = () => {
             ctx.arc(mx, my, moon.radius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Tiny shadow for moon too
             const moonAngleToSun = Math.atan2(-my, -mx);
             ctx.save();
             ctx.translate(mx, my);
@@ -351,7 +319,6 @@ const SolarSystem: React.FC = () => {
             ctx.fill();
             ctx.restore();
 
-            // Highlight
             if (selectedPlanet?.name === moon.name || hoveredPlanet?.name === moon.name) {
                 ctx.strokeStyle = 'white';
                 ctx.lineWidth = 1 / scale;
@@ -362,7 +329,6 @@ const SolarSystem: React.FC = () => {
           });
         }
 
-        // Highlight Planet
         if (selectedPlanet?.name === config.name || hoveredPlanet?.name === config.name) {
           ctx.strokeStyle = 'white';
           ctx.lineWidth = 2 / scale;
@@ -371,7 +337,6 @@ const SolarSystem: React.FC = () => {
           ctx.stroke();
         }
 
-        // Labels
         if (scale < 0.25 || selectedPlanet?.name === config.name) {
           ctx.fillStyle = '#EEE';
           ctx.font = `bold ${12/scale}px "Segoe UI", sans-serif`;
@@ -390,8 +355,6 @@ const SolarSystem: React.FC = () => {
     render();
     return () => cancelAnimationFrame(animationFrameId);
   }, [stars, asteroids, isPlaying, following, selectedPlanet, hoveredPlanet]);
-
-  // --- INTERACTION HANDLERS (Same as before but using visualX/visualY) ---
 
   const handleWheel = (e: React.WheelEvent) => {
     const scale = simulationState.current.scale;
@@ -443,7 +406,6 @@ const SolarSystem: React.FC = () => {
       const rtP = planetsRuntime.current[i];
       const config = PLANETS[i];
 
-      // Use pre-calculated visual positions (Elliptical)
       let pX = rtP.visualX;
       let pY = rtP.visualY;
       if (config.type === 'star') { pX = 0; pY = 0; }
@@ -466,7 +428,8 @@ const SolarSystem: React.FC = () => {
              const mDist = Math.hypot(mouseX - screenMX, mouseY - screenMY);
 
              if (mDist < mHitRadius) {
-                 found = { ...moon, type: 'moon' };
+                 // FIX: Use 'as const' to satisfy TypeScript strict literal types
+                 found = { ...moon, type: 'moon' as const };
                  break;
              }
          }
@@ -474,7 +437,6 @@ const SolarSystem: React.FC = () => {
       
       if (found) break;
 
-      // Check Planets
       const hitRadius = Math.max(config.radius * scale, 12);
       const dist = Math.hypot(mouseX - screenX, mouseY - screenY);
 
