@@ -175,7 +175,8 @@ const SolarSystem: React.FC = () => {
       ctx.lineWidth = Math.max(0.5, 0.5 / scale);
       ctx.strokeStyle = '#333';
       
-      planetsRuntime.current.forEach((rtP, i) => {
+      // Fix: Changed 'rtP' to '_' to ignore unused parameter
+      planetsRuntime.current.forEach((_, i) => {
           const config = PLANETS[i];
           if (config.type === 'planet') {
             const a = config.distance * AU_PIXELS;
@@ -243,7 +244,7 @@ const SolarSystem: React.FC = () => {
             ctx.fill();
         }
 
-        const surfGrad = ctx.createLinearGradient(-radius, -radius, radius, radius);
+        // Fix: Removed unused surfGrad variable
         if (config.colors.length > 2) {
              const angle = Math.PI / 4;
              const planetCtx = ctx.createLinearGradient(
