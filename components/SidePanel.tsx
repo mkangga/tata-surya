@@ -12,6 +12,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({ planet, onClose, onFollow,
   if (!planet) return null;
 
   const isMoon = planet.type === 'moon';
+  const isDwarf = planet.type === 'dwarf';
+  const isComet = planet.type === 'comet';
 
   return (
     <div className="absolute top-0 right-0 h-full w-full md:w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 p-6 z-50 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col">
@@ -40,6 +42,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({ planet, onClose, onFollow,
         </div>
 
         <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+          {isDwarf && <span className="inline-block px-2 py-0.5 mb-2 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase border border-purple-500/50">Planet Kerdil</span>}
+          {isComet && <span className="inline-block px-2 py-0.5 mb-2 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold uppercase border border-cyan-500/50">Komet</span>}
           <p className="text-gray-300 text-sm leading-relaxed text-justify">{planet.description}</p>
         </div>
 
@@ -117,7 +121,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({ planet, onClose, onFollow,
             }`}
           >
             <i className={`fas ${isFollowing ? 'fa-video-slash' : 'fa-video'}`}></i>
-            {isFollowing ? 'Berhenti Mengikuti' : 'Ikuti Planet Ini'}
+            {isFollowing ? 'Berhenti Mengikuti' : 'Ikuti Objek Ini'}
           </button>
         </div>
       )}

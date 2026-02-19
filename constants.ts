@@ -176,6 +176,38 @@ export const PLANETS: PlanetConfig[] = [
     moons: [
       { name: "Triton", radius: 1.4, distance: 22, speed: -4, color: "#D1E2EA", description: "Mengorbit berlawanan arah (retrograde)." }
     ]
+  },
+  { 
+    name: "Pluto", 
+    color: "#E3D2B4", 
+    colors: ["#FFF1D5", "#E3D2B4", "#8B7355"],
+    radius: 3, 
+    distance: 39.48, 
+    eccentricity: 0.248, // Sangat eksentrik
+    speed: 0.004, 
+    description: "Planet kerdil di Sabuk Kuiper. Dulu dianggap planet ke-9. Terdiri dari batu dan es. Orbitnya sangat lonjong dan kadang lebih dekat ke Matahari daripada Neptunus.", 
+    type: "dwarf",
+    diameter: "2.377 km",
+    temp: "-229°C",
+    dayLength: "153 Jam",
+    yearLength: "248 Tahun Bumi",
+    funFact: "Pluto memiliki 'jantung' raksasa di permukaannya yang disebut Tombaugh Regio, terbuat dari es nitrogen."
+  },
+  { 
+    name: "Komet Halley", 
+    color: "#FFFFFF", 
+    colors: ["#FFFFFF", "#AACCFF"],
+    radius: 2, 
+    distance: 17.8, // Semi-major axis (approx)
+    eccentricity: 0.967, // Sangat lonjong
+    speed: 0.01, 
+    description: "Komet periode pendek yang paling terkenal. Terlihat dari Bumi setiap 75-76 tahun. Terdiri dari campuran es yang mudah menguap, debu, dan batuan.", 
+    type: "comet",
+    diameter: "11 km (Inti)",
+    temp: "Bervariasi Ekstrem",
+    dayLength: "2,2 Hari (Rotasi)",
+    yearLength: "75,3 Tahun",
+    funFact: "Saat mendekati Matahari, ia mengembangkan ekor (koma) yang selalu menjauhi Matahari karena angin surya."
   }
 ];
 

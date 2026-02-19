@@ -17,7 +17,7 @@ export interface PlanetConfig {
   eccentricity: number; // 0 = circle, >0 = ellipse
   speed: number; // Orbital speed relative to simulation
   description: string;
-  type: 'star' | 'planet';
+  type: 'star' | 'planet' | 'dwarf' | 'comet';
   hasRing?: boolean;
   moons?: MoonConfig[]; 
   // Detailed stats

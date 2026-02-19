@@ -12,12 +12,18 @@ interface ControlsProps {
   date: number;
   onSelectPlanet: (p: PlanetConfig) => void;
   following: string | null;
+  showHabitableZone: boolean;
+  setShowHabitableZone: (val: boolean) => void;
+  showComets: boolean;
+  setShowComets: (val: boolean) => void;
 }
 
 export const Controls: React.FC<ControlsProps> = ({ 
   speed, setSpeed, zoom, setZoom, 
   isPlaying, togglePlay, date, 
-  onSelectPlanet, following 
+  onSelectPlanet, following,
+  showHabitableZone, setShowHabitableZone,
+  showComets, setShowComets
 }) => {
   const formattedDate = new Date(date).toLocaleDateString('id-ID', {
     year: 'numeric', month: 'long', day: 'numeric'
@@ -38,9 +44,24 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
         </div>
 
-        <div className="bg-black/60 backdrop-blur-md border border-gray-700 rounded-lg px-4 py-2 text-right">
-           <div className="text-[10px] text-gray-400 uppercase tracking-widest">Simulasi Waktu</div>
-           <div className="text-lg font-mono font-bold text-blue-400">{formattedDate}</div>
+        <div className="flex flex-col items-end gap-2">
+            <div className="bg-black/60 backdrop-blur-md border border-gray-700 rounded-lg px-4 py-2 text-right">
+                <div className="text-[10px] text-gray-400 uppercase tracking-widest">Simulasi Waktu</div>
+                <div className="text-lg font-mono font-bold text-blue-400">{formattedDate}</div>
+            </div>
+            
+            <div className="bg-black/60 backdrop-blur-md border border-gray-700 rounded-lg p-2 flex flex-col gap-2">
+               <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-3 h-3 rounded-full border border-green-500 ${showHabitableZone ? 'bg-green-500' : 'bg-transparent'} transition-colors`}></div>
+                  <input type="checkbox" checked={showHabitableZone} onChange={e => setShowHabitableZone(e.target.checked)} className="hidden" />
+                  <span className="text-[10px] text-gray-300 group-hover:text-white uppercase font-bold">Zona Laik Huni</span>
+               </label>
+               <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-3 h-3 rounded-full border border-cyan-400 ${showComets ? 'bg-cyan-400' : 'bg-transparent'} transition-colors`}></div>
+                  <input type="checkbox" checked={showComets} onChange={e => setShowComets(e.target.checked)} className="hidden" />
+                  <span className="text-[10px] text-gray-300 group-hover:text-white uppercase font-bold">Tampilkan Komet</span>
+               </label>
+            </div>
         </div>
       </div>
 
@@ -94,6 +115,7 @@ export const Controls: React.FC<ControlsProps> = ({
                 ${following === p.name 
                   ? 'bg-blue-600 border-blue-400 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' 
                   : 'bg-black/60 border-gray-700 text-gray-300 hover:bg-white/10 hover:border-white/30'}
+                ${p.type === 'comet' && !showComets ? 'hidden' : ''}
               `}
             >
               <span className="w-2 h-2 rounded-full" style={{backgroundColor: p.color}}></span>

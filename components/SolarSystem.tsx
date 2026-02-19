@@ -22,6 +22,10 @@ const SolarSystem: React.FC = () => {
   const [uiZoom, setUiZoom] = useState(0.4); // Start zoomed out a bit more
   const [isPlaying, setIsPlaying] = useState(true);
   const [simulationDate, setSimulationDate] = useState(Date.now());
+  
+  // New Visualization States
+  const [showHabitableZone, setShowHabitableZone] = useState(false);
+  const [showComets, setShowComets] = useState(true);
 
   // Simulation State
   const simulationState = useRef({
@@ -79,13 +83,21 @@ const SolarSystem: React.FC = () => {
 
         planetsRuntime.current.forEach((rtPlanet, index) => {
           const config = PLANETS[index];
-          if (config.type === 'planet') {
-            // Kepler's Law approximation for speed
-            rtPlanet.angle += (config.speed * 0.002) * speedMultiplier;
+          // Physics for Planets, Dwarfs, and Comets
+          if (config.type === 'planet' || config.type === 'dwarf' || config.type === 'comet') {
+            
+            // Variable speed based on Kepler's 2nd Law (faster near perihelion)
+            // Calculate r (distance) for current angle to adjust speed
+            const a = config.distance * AU_PIXELS;
+            const e = config.eccentricity;
+            const currentR = (a * (1 - e * e)) / (1 + e * Math.cos(rtPlanet.angle));
+            const normalizedR = currentR / (a); 
+            // Simplified viscosity: closer = faster.
+            const keplerSpeed = config.speed * (1 / (normalizedR * normalizedR)); 
+
+            rtPlanet.angle += (keplerSpeed * 0.002) * speedMultiplier;
             
             // ELLIPTICAL ORBIT CALCULATION
-            const a = config.distance * AU_PIXELS; // Semi-major axis
-            const e = config.eccentricity;
             const b = a * Math.sqrt(1 - e*e); // Semi-minor axis
             const c = a * e; // Distance from center to focus (Sun)
 
@@ -99,7 +111,9 @@ const SolarSystem: React.FC = () => {
             
             // Trail Logic
             if (rtPlanet.trail.length > 80) rtPlanet.trail.shift();
-            if (Math.floor(Date.now() / 20) % 2 === 0) {
+            // Comets leave denser trails
+            const trailFrequency = config.type === 'comet' ? 5 : 20;
+            if (Math.floor(Date.now() / trailFrequency) % 2 === 0) {
                 rtPlanet.trail.push({ x: rtPlanet.visualX, y: rtPlanet.visualY });
             }
 
@@ -122,12 +136,40 @@ const SolarSystem: React.FC = () => {
       let currentOffsetY = offsetY;
 
       if (following) {
+        // Find planet or moon to follow
+        let targetX = 0;
+        let targetY = 0;
+        let foundTarget = false;
+
         const targetPlanet = planetsRuntime.current.find(p => p.name === following);
         if (targetPlanet) {
-            simulationState.current.offsetX = -targetPlanet.visualX;
-            simulationState.current.offsetY = -targetPlanet.visualY;
-            currentOffsetX = -targetPlanet.visualX;
-            currentOffsetY = -targetPlanet.visualY;
+            targetX = targetPlanet.visualX;
+            targetY = targetPlanet.visualY;
+            foundTarget = true;
+        } else {
+             // Check if it's a moon
+             for(let i=0; i<PLANETS.length; i++) {
+                 const pConfig = PLANETS[i];
+                 const pRuntime = planetsRuntime.current[i];
+                 if(pConfig.moons && pRuntime.moons) {
+                     const mIndex = pConfig.moons.findIndex(m => m.name === following);
+                     if(mIndex !== -1) {
+                         const mConfig = pConfig.moons[mIndex];
+                         const mRuntime = pRuntime.moons[mIndex];
+                         targetX = pRuntime.visualX + Math.cos(mRuntime.angle) * mConfig.distance;
+                         targetY = pRuntime.visualY + Math.sin(mRuntime.angle) * mConfig.distance;
+                         foundTarget = true;
+                         break;
+                     }
+                 }
+             }
+        }
+
+        if (foundTarget) {
+            simulationState.current.offsetX = -targetX;
+            simulationState.current.offsetY = -targetY;
+            currentOffsetX = -targetX;
+            currentOffsetY = -targetY;
         }
       }
 
@@ -171,21 +213,43 @@ const SolarSystem: React.FC = () => {
       });
       ctx.globalAlpha = 1.0;
 
-      // 4. Orbit Lines
+      // 4. Orbit Lines & Habitable Zone
+      
+      // Habitable Zone (Goldilocks Zone)
+      if (showHabitableZone) {
+          const hzInner = 0.95 * AU_PIXELS;
+          const hzOuter = 1.37 * AU_PIXELS;
+          ctx.beginPath();
+          ctx.arc(0, 0, hzInner, 0, Math.PI * 2);
+          ctx.arc(0, 0, hzOuter, 0, Math.PI * 2, true); // Create ring
+          ctx.fillStyle = 'rgba(0, 255, 100, 0.1)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0, 255, 100, 0.2)';
+          ctx.lineWidth = 1 / scale;
+          ctx.stroke();
+      }
+
       ctx.lineWidth = Math.max(0.5, 0.5 / scale);
-      ctx.strokeStyle = '#333';
       
       // Fix: Changed 'rtP' to '_' to ignore unused parameter
       planetsRuntime.current.forEach((_, i) => {
           const config = PLANETS[i];
-          if (config.type === 'planet') {
+          if (config.type === 'comet' && !showComets) return;
+
+          if (config.type === 'planet' || config.type === 'dwarf' || config.type === 'comet') {
             const a = config.distance * AU_PIXELS;
             const e = config.eccentricity;
             const b = a * Math.sqrt(1 - e*e);
             const c = a * e;
             ctx.beginPath();
+            ctx.strokeStyle = config.type === 'comet' ? 'rgba(255,255,255,0.1)' : (config.type === 'dwarf' ? '#555' : '#333');
+            // Dashed line for comets/dwarfs
+            if (config.type !== 'planet') ctx.setLineDash([5 / scale, 5 / scale]);
+            else ctx.setLineDash([]);
+            
             ctx.ellipse(-c, 0, a, b, 0, 0, Math.PI * 2);
             ctx.stroke();
+            ctx.setLineDash([]);
           }
       });
 
@@ -212,13 +276,15 @@ const SolarSystem: React.FC = () => {
       // 6. Planets & Moons
       planetsRuntime.current.forEach((rtPlanet, index) => {
         const config = PLANETS[index];
-        if (config.type !== 'planet') return;
+        if (config.type === 'star') return;
+        if (config.type === 'comet' && !showComets) return;
 
+        // Draw Trails
         if (rtPlanet.trail.length > 1) {
           ctx.beginPath();
           ctx.strokeStyle = config.color;
           ctx.lineWidth = Math.max(1, 1/scale);
-          ctx.globalAlpha = 0.3;
+          ctx.globalAlpha = config.type === 'comet' ? 0.6 : 0.3;
           rtPlanet.trail.forEach((point, i) => {
             if (i === 0) ctx.moveTo(point.x, point.y);
             else ctx.lineTo(point.x, point.y);
@@ -230,6 +296,33 @@ const SolarSystem: React.FC = () => {
         const x = rtPlanet.visualX;
         const y = rtPlanet.visualY;
         const radius = config.radius * PLANET_SCALE_FACTOR;
+
+        // Comet Tail Logic (Always points away from Sun)
+        if (config.type === 'comet') {
+           const distToSun = Math.sqrt(x*x + y*y);
+           // Tail gets longer and brighter when closer to sun
+           const maxTailLen = 100;
+           const tailStrength = Math.min(1, 400 / distToSun); 
+           
+           if (tailStrength > 0.1) {
+             const angleFromSun = Math.atan2(y, x);
+             ctx.save();
+             ctx.translate(x, y);
+             ctx.rotate(angleFromSun);
+             
+             const tailGrad = ctx.createLinearGradient(0, 0, maxTailLen * tailStrength, 0);
+             tailGrad.addColorStop(0, 'rgba(200, 230, 255, 0.8)');
+             tailGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+             
+             ctx.fillStyle = tailGrad;
+             ctx.beginPath();
+             ctx.moveTo(0, -radius);
+             ctx.lineTo(maxTailLen * tailStrength, 0);
+             ctx.lineTo(0, radius);
+             ctx.fill();
+             ctx.restore();
+           }
+        }
 
         ctx.save();
         ctx.translate(x, y);
@@ -283,6 +376,7 @@ const SolarSystem: React.FC = () => {
              ctx.restore();
         }
 
+        // Shadow Logic
         const angleToSun = Math.atan2(-y, -x);
         ctx.rotate(angleToSun);
         
@@ -355,7 +449,7 @@ const SolarSystem: React.FC = () => {
 
     render();
     return () => cancelAnimationFrame(animationFrameId);
-  }, [stars, asteroids, isPlaying, following, selectedPlanet, hoveredPlanet]);
+  }, [stars, asteroids, isPlaying, following, selectedPlanet, hoveredPlanet, showHabitableZone, showComets]);
 
   const handleWheel = (e: React.WheelEvent) => {
     const scale = simulationState.current.scale;
@@ -406,6 +500,8 @@ const SolarSystem: React.FC = () => {
     for (let i = 0; i < planetsRuntime.current.length; i++) {
       const rtP = planetsRuntime.current[i];
       const config = PLANETS[i];
+      
+      if (config.type === 'comet' && !showComets) continue;
 
       let pX = rtP.visualX;
       let pY = rtP.visualY;
@@ -455,16 +551,62 @@ const SolarSystem: React.FC = () => {
 
   const handleClick = () => {
     if (hoveredPlanet) {
-      setSelectedPlanet(hoveredPlanet);
-      if (hoveredPlanet.type !== 'moon') {
-        setFollowing(hoveredPlanet.name);
-      }
+      handleSelectPlanet(hoveredPlanet);
     }
   };
 
-  const handleSelectPlanet = (p: PlanetConfig) => {
+  const handleSelectPlanet = (p: PlanetConfig | MoonConfig) => {
     setSelectedPlanet(p);
     setFollowing(p.name);
+    
+    // Auto-zoom logic
+    const r = p.radius;
+    let targetZoom = 1.0;
+    
+    // Outer planets (Radius >= 10) get 1.0x
+    if (r >= 10) {
+        targetZoom = 1.0;
+    } else {
+        // Inner planets/moons get calculated zoom
+        targetZoom = Math.min(Math.max(20 / r, 1.0), 3.5);
+    }
+    
+    setUiZoom(targetZoom);
+    simulationState.current.scale = targetZoom;
+  };
+
+  const handleSidePanelFollow = (name: string) => {
+      if (following === name) {
+          setFollowing(null);
+      } else {
+          // Find the planet/moon object to calculate correct zoom
+          let target: PlanetConfig | MoonConfig | undefined = PLANETS.find(p => p.name === name);
+          if (!target) {
+              // Check moons
+              PLANETS.forEach(p => {
+                  if (p.moons) {
+                      const m = p.moons.find(m => m.name === name);
+                      if (m) target = m;
+                  }
+              });
+          }
+
+          setFollowing(name);
+          
+          if (target) {
+              const r = target.radius;
+              let targetZoom = 1.0;
+              
+              if (r >= 10) {
+                  targetZoom = 1.0;
+              } else {
+                  targetZoom = Math.min(Math.max(20 / r, 1.0), 3.5);
+              }
+
+              setUiZoom(targetZoom);
+              simulationState.current.scale = targetZoom;
+          }
+      }
   };
 
   return (
@@ -474,8 +616,12 @@ const SolarSystem: React.FC = () => {
         zoom={uiZoom} setZoom={setUiZoom} 
         isPlaying={isPlaying} togglePlay={() => setIsPlaying(!isPlaying)}
         date={simulationDate}
-        onSelectPlanet={handleSelectPlanet}
+        onSelectPlanet={(p) => handleSelectPlanet(p)}
         following={following}
+        showHabitableZone={showHabitableZone}
+        setShowHabitableZone={setShowHabitableZone}
+        showComets={showComets}
+        setShowComets={setShowComets}
       />
       
       <canvas
@@ -496,7 +642,7 @@ const SolarSystem: React.FC = () => {
       <SidePanel 
         planet={selectedPlanet} 
         onClose={() => setSelectedPlanet(null)} 
-        onFollow={(name) => setFollowing(name === following ? null : name)}
+        onFollow={handleSidePanelFollow}
         isFollowing={!!(selectedPlanet && following === selectedPlanet.name)}
       />
     </div>
