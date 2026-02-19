@@ -38,6 +38,11 @@ const SolarSystem: React.FC = () => {
     lastMouseY: 0,
   });
 
+  // Touch State Refs
+  const touchStartRef = useRef<{ x: number, y: number, time: number } | null>(null);
+  const lastTouchRef = useRef<{ x: number, y: number } | null>(null);
+  const lastPinchDistRef = useRef<number | null>(null);
+
   const planetsRuntime = useRef<PlanetRuntimeState[]>(
     PLANETS.map(p => ({
       name: p.name,
@@ -231,7 +236,6 @@ const SolarSystem: React.FC = () => {
 
       ctx.lineWidth = Math.max(0.5, 0.5 / scale);
       
-      // Fix: Changed 'rtP' to '_' to ignore unused parameter
       planetsRuntime.current.forEach((_, i) => {
           const config = PLANETS[i];
           if (config.type === 'comet' && !showComets) return;
@@ -243,7 +247,6 @@ const SolarSystem: React.FC = () => {
             const c = a * e;
             ctx.beginPath();
             ctx.strokeStyle = config.type === 'comet' ? 'rgba(255,255,255,0.1)' : (config.type === 'dwarf' ? '#555' : '#333');
-            // Dashed line for comets/dwarfs
             if (config.type !== 'planet') ctx.setLineDash([5 / scale, 5 / scale]);
             else ctx.setLineDash([]);
             
@@ -300,7 +303,6 @@ const SolarSystem: React.FC = () => {
         // Comet Tail Logic (Always points away from Sun)
         if (config.type === 'comet') {
            const distToSun = Math.sqrt(x*x + y*y);
-           // Tail gets longer and brighter when closer to sun
            const maxTailLen = 100;
            const tailStrength = Math.min(1, 400 / distToSun); 
            
@@ -337,7 +339,6 @@ const SolarSystem: React.FC = () => {
             ctx.fill();
         }
 
-        // Fix: Removed unused surfGrad variable
         if (config.colors.length > 2) {
              const angle = Math.PI / 4;
              const planetCtx = ctx.createLinearGradient(
@@ -451,6 +452,63 @@ const SolarSystem: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [stars, asteroids, isPlaying, following, selectedPlanet, hoveredPlanet, showHabitableZone, showComets]);
 
+  // Universal Hit Detection (Mouse & Touch)
+  const checkHit = (clientX: number, clientY: number): PlanetConfig | MoonConfig | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      const mouseY = clientY - rect.top;
+      const width = canvas.width; 
+      const height = canvas.height;
+      const cx = width / 2;
+      const cy = height / 2;
+      const { scale, offsetX, offsetY } = simulationState.current;
+
+      for (let i = 0; i < planetsRuntime.current.length; i++) {
+        const rtP = planetsRuntime.current[i];
+        const config = PLANETS[i];
+        
+        if (config.type === 'comet' && !showComets) continue;
+
+        let pX = rtP.visualX;
+        let pY = rtP.visualY;
+        if (config.type === 'star') { pX = 0; pY = 0; }
+        
+        const screenX = cx + offsetX + pX * scale;
+        const screenY = cy + offsetY + pY * scale;
+
+        // Check Moons
+        if (config.moons && rtP.moons && scale > 0.15) {
+          for(let m=0; m<config.moons.length; m++) {
+              const moon = config.moons[m];
+              const rtMoon = rtP.moons[m];
+              const mx = pX + Math.cos(rtMoon.angle) * moon.distance;
+              const my = pY + Math.sin(rtMoon.angle) * moon.distance;
+              
+              const screenMX = cx + offsetX + mx * scale;
+              const screenMY = cy + offsetY + my * scale;
+              
+              const mHitRadius = Math.max(moon.radius * scale, 15); // Larger hit area for easier tapping
+              const mDist = Math.hypot(mouseX - screenMX, mouseY - screenMY);
+
+              if (mDist < mHitRadius) {
+                  return { ...moon, type: 'moon' as const };
+              }
+          }
+        }
+
+        const hitRadius = Math.max(config.radius * scale, 20); // Larger hit area for easier tapping
+        const dist = Math.hypot(mouseX - screenX, mouseY - screenY);
+
+        if (dist < hitRadius) {
+          return config;
+        }
+      }
+      return null;
+  };
+
   const handleWheel = (e: React.WheelEvent) => {
     const scale = simulationState.current.scale;
     const zoomSensitivity = 0.001 * scale; 
@@ -483,66 +541,7 @@ const SolarSystem: React.FC = () => {
       return;
     }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const width = canvas.width; 
-    const height = canvas.height;
-    const cx = width / 2;
-    const cy = height / 2;
-    const { scale, offsetX, offsetY } = simulationState.current;
-
-    let found: PlanetConfig | MoonConfig | null = null;
-
-    for (let i = 0; i < planetsRuntime.current.length; i++) {
-      const rtP = planetsRuntime.current[i];
-      const config = PLANETS[i];
-      
-      if (config.type === 'comet' && !showComets) continue;
-
-      let pX = rtP.visualX;
-      let pY = rtP.visualY;
-      if (config.type === 'star') { pX = 0; pY = 0; }
-      
-      const screenX = cx + offsetX + pX * scale;
-      const screenY = cy + offsetY + pY * scale;
-
-      // Check Moons first
-      if (config.moons && rtP.moons && scale > 0.15) {
-         for(let m=0; m<config.moons.length; m++) {
-             const moon = config.moons[m];
-             const rtMoon = rtP.moons[m];
-             const mx = pX + Math.cos(rtMoon.angle) * moon.distance;
-             const my = pY + Math.sin(rtMoon.angle) * moon.distance;
-             
-             const screenMX = cx + offsetX + mx * scale;
-             const screenMY = cy + offsetY + my * scale;
-             
-             const mHitRadius = Math.max(moon.radius * scale, 6); 
-             const mDist = Math.hypot(mouseX - screenMX, mouseY - screenMY);
-
-             if (mDist < mHitRadius) {
-                 // FIX: Use 'as const' to satisfy TypeScript strict literal types
-                 found = { ...moon, type: 'moon' as const };
-                 break;
-             }
-         }
-      }
-      
-      if (found) break;
-
-      const hitRadius = Math.max(config.radius * scale, 12);
-      const dist = Math.hypot(mouseX - screenX, mouseY - screenY);
-
-      if (dist < hitRadius) {
-        found = config;
-        break;
-      }
-    }
-
+    const found = checkHit(e.clientX, e.clientY);
     setHoveredPlanet(found);
     if (found) {
       setCursorPos({ x: e.clientX, y: e.clientY });
@@ -555,6 +554,76 @@ const SolarSystem: React.FC = () => {
     }
   };
 
+  // --- TOUCH HANDLERS (MOBILE) ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+        lastTouchRef.current = { x: t.clientX, y: t.clientY };
+        simulationState.current.isDragging = true;
+        if (following) setFollowing(null);
+    } else if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        lastPinchDistRef.current = dist;
+        simulationState.current.isDragging = false; // Zooming
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+      // Pan
+      if (e.touches.length === 1 && simulationState.current.isDragging && lastTouchRef.current) {
+          const t = e.touches[0];
+          const dx = t.clientX - lastTouchRef.current.x;
+          const dy = t.clientY - lastTouchRef.current.y;
+          
+          simulationState.current.offsetX += dx;
+          simulationState.current.offsetY += dy;
+          lastTouchRef.current = { x: t.clientX, y: t.clientY };
+      } 
+      // Pinch Zoom
+      else if (e.touches.length === 2 && lastPinchDistRef.current !== null) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          
+          if (lastPinchDistRef.current > 0) {
+              const scaleFactor = dist / lastPinchDistRef.current;
+              let newScale = simulationState.current.scale * scaleFactor;
+              newScale = Math.max(0.01, Math.min(newScale, 5));
+              
+              simulationState.current.scale = newScale;
+              setUiZoom(newScale);
+          }
+          lastPinchDistRef.current = dist;
+      }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+      // Tap Detection
+      if (e.changedTouches.length > 0 && touchStartRef.current) {
+          const t = e.changedTouches[0];
+          const dx = t.clientX - touchStartRef.current.x;
+          const dy = t.clientY - touchStartRef.current.y;
+          const dt = Date.now() - touchStartRef.current.time;
+          
+          // If tap was short (<300ms) and didn't move much (<10px)
+          if (Math.hypot(dx, dy) < 10 && dt < 300 && e.touches.length === 0) {
+              const hit = checkHit(t.clientX, t.clientY);
+              if (hit) {
+                  handleSelectPlanet(hit);
+              }
+          }
+      }
+      
+      if (e.touches.length === 0) {
+          simulationState.current.isDragging = false;
+          lastTouchRef.current = null;
+          lastPinchDistRef.current = null;
+      }
+  };
+
   const handleSelectPlanet = (p: PlanetConfig | MoonConfig) => {
     setSelectedPlanet(p);
     setFollowing(p.name);
@@ -563,11 +632,9 @@ const SolarSystem: React.FC = () => {
     const r = p.radius;
     let targetZoom = 1.0;
     
-    // Outer planets (Radius >= 10) get 1.0x
     if (r >= 10) {
         targetZoom = 1.0;
     } else {
-        // Inner planets/moons get calculated zoom
         targetZoom = Math.min(Math.max(20 / r, 1.0), 3.5);
     }
     
@@ -579,10 +646,8 @@ const SolarSystem: React.FC = () => {
       if (following === name) {
           setFollowing(null);
       } else {
-          // Find the planet/moon object to calculate correct zoom
           let target: PlanetConfig | MoonConfig | undefined = PLANETS.find(p => p.name === name);
           if (!target) {
-              // Check moons
               PLANETS.forEach(p => {
                   if (p.moons) {
                       const m = p.moons.find(m => m.name === name);
@@ -596,7 +661,6 @@ const SolarSystem: React.FC = () => {
           if (target) {
               const r = target.radius;
               let targetZoom = 1.0;
-              
               if (r >= 10) {
                   targetZoom = 1.0;
               } else {
@@ -626,13 +690,18 @@ const SolarSystem: React.FC = () => {
       
       <canvas
         ref={canvasRef}
-        className={`block w-full h-full ${simulationState.current.isDragging ? 'cursor-grabbing' : hoveredPlanet ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`block w-full h-full touch-none ${simulationState.current.isDragging ? 'cursor-grabbing' : hoveredPlanet ? 'cursor-pointer' : 'cursor-default'}`}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onMouseMove={handleMouseMove}
         onClick={handleClick}
+        
+        /* Mobile Touch Events */
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
 
       {!selectedPlanet && (
