@@ -1,5 +1,6 @@
 {
-  "name": "Tata Surya Karim",
+  "name": "Solar System by MKA",
   "description": "A high-performance, interactive solar system simulation using HTML5 Canvas and React.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -96,6 +96,22 @@ export const PLANETS: PlanetConfig[] = [
     ]
   },
   { 
+    name: "Ceres", 
+    color: "#8E918F", 
+    colors: ["#B5B8B6", "#8E918F", "#626463"],
+    radius: 3.5, 
+    distance: 2.77, 
+    eccentricity: 0.079,
+    speed: 0.24, 
+    description: "Ceres adalah planet kerdil terkecil dan satu-satunya yang terletak di sabuk asteroid antara Mars dan Jupiter. Ceres menyusun sepertiga dari seluruh massa total pengisi sabuk asteroid utama.", 
+    type: "dwarf",
+    diameter: "940 km",
+    temp: "-105°C",
+    dayLength: "9 Jam",
+    yearLength: "4,6 Tahun Bumi",
+    funFact: "Ditemukan pertama kali oleh Giuseppe Piazzi pada tahun 1801 dan sempat dikira sebagai planet baru."
+  },
+  { 
     name: "Jupiter", 
     color: "#D9A066", 
     colors: ["#E3DCCB", "#D9A066", "#C88B3A", "#A16A38"], // Banded structure
@@ -134,8 +150,10 @@ export const PLANETS: PlanetConfig[] = [
     yearLength: "29,45 Tahun Bumi",
     funFact: "Angin di Saturnus bisa mencapai kecepatan 1.800 km/jam, jauh lebih cepat daripada di Jupiter.",
     moons: [
+      { name: "Mimas", radius: 0.8, distance: 15, speed: 9, color: "#B0B0B0", description: "Sering dijuluki 'Death Star' karena kawah Herschel raksasa di permukaannya." },
+      { name: "Enceladus", radius: 1.1, distance: 21, speed: 7, color: "#E0F0FF", description: "Bulan es aktif yang menyemburkan geyser uap air dari samudra bawah permukaan." },
       { name: "Titan", radius: 1.9, distance: 38, speed: 3, color: "#D9B850", description: "Memiliki atmosfer tebal dan danau metana." },
-      { name: "Rhea", radius: 1.0, distance: 26, speed: 5, color: "#AFAFAF", description: "Bulan es yang padat." }
+      { name: "Rhea", radius: 1.0, distance: 28, speed: 5, color: "#AFAFAF", description: "Bulan es yang padat." }
     ]
   },
   { 
@@ -154,6 +172,7 @@ export const PLANETS: PlanetConfig[] = [
     yearLength: "84 Tahun Bumi",
     funFact: "Berotasi menyamping (kemiringan sumbu 98°), mungkin akibat tabrakan besar di masa lalu.",
     moons: [
+      { name: "Miranda", radius: 0.8, distance: 15, speed: 6, color: "#C8C8C8", description: "Bulan dengan fitur patahan tektonik terekstrem dan tebing tetinggi di Tata Surya." },
       { name: "Titania", radius: 1.1, distance: 22, speed: 4, color: "#C0C0C0", description: "Bulan terbesar Uranus." },
       { name: "Oberon", radius: 1.0, distance: 28, speed: 3, color: "#A0A0A0", description: "Bulan terjauh." }
     ]
@@ -191,7 +210,65 @@ export const PLANETS: PlanetConfig[] = [
     temp: "-229°C",
     dayLength: "153 Jam",
     yearLength: "248 Tahun Bumi",
-    funFact: "Pluto memiliki 'jantung' raksasa di permukaannya yang disebut Tombaugh Regio, terbuat dari es nitrogen."
+    funFact: "Pluto memiliki 'jantung' raksasa di permukaannya yang disebut Tombaugh Regio, terbuat dari es nitrogen.",
+    moons: [
+      { name: "Charon", radius: 1.3, distance: 9, speed: 10, color: "#ACA095", description: "Bulan terbesar Pluto, ukurannya setengah dari Pluto sehingga membentuk sistem planet ganda." }
+    ]
+  },
+  { 
+    name: "Haumea", 
+    color: "#C8D3D5", 
+    colors: ["#E1E8E9", "#C8D3D5", "#A4B1B3"],
+    radius: 3.2, 
+    distance: 43.1, 
+    eccentricity: 0.197,
+    speed: 0.0035, 
+    description: "Haumea adalah planet kerdil di Sabuk Kuiper yang memiliki bentuk elipsoid unik menyerupai bola rugby. Bentuk memanjang ini diakibatkan oleh rotasinya yang luar biasa cepat (kurang dari 4 jam).", 
+    type: "dwarf",
+    diameter: "1.632 km (Sumbu Utama)",
+    temp: "-223°C",
+    dayLength: "3,9 Jam",
+    yearLength: "284 Tahun Bumi",
+    funFact: "Memiliki dua bulan es berukuran mungil bernama Hi'iaka dan Namaka, serta memiliki sistem cincin tipis sendiri.",
+    moons: [
+      { name: "Hi'iaka", radius: 0.8, distance: 10, speed: 12, color: "#9EB0B3", description: "Bulan luar terbesar dari planet kerdil Haumea." },
+      { name: "Namaka", radius: 0.6, distance: 6, speed: 18, color: "#8E9DA0", description: "Bulan dalam yang mengorbit dekat permukaan Haumea." }
+    ]
+  },
+  { 
+    name: "Makemake", 
+    color: "#D48B63", 
+    colors: ["#E3AB8B", "#D48B63", "#AC5B31"],
+    radius: 3.1, 
+    distance: 45.3, 
+    eccentricity: 0.155,
+    speed: 0.003, 
+    description: "Salah satu objek terbesar di Sabuk Kuiper yang diselimuti es metana, etana, dan nitrogen murni sehingga membuatnya berwarna oranye kemerahan di permukaannya.", 
+    type: "dwarf",
+    diameter: "1.430 km",
+    temp: "-239°C",
+    dayLength: "22,5 Jam",
+    yearLength: "309 Tahun Bumi",
+    funFact: "Ditemukan pada tahun 2005 dan dinamai berdasarkan pencipta manusia dan dewa kesuburan dalam mitologi klasik Rapa Nui."
+  },
+  { 
+    name: "Eris", 
+    color: "#DCE5E7", 
+    colors: ["#FFFFFF", "#DCE5E7", "#B9C2C4"],
+    radius: 3.3, 
+    distance: 48.5, 
+    eccentricity: 0.441, // Sangat eksentrik
+    speed: 0.0025, 
+    description: "Planet kerdil paling masif di Tata Surya kita. Ditemukan di piringan tersebar di luar Sabuk Kuiper, memicu keputusan IAU untuk meregulasikan definisi resmi planet utama.", 
+    type: "dwarf",
+    diameter: "2.326 km",
+    temp: "-243°C",
+    dayLength: "25,9 Jam",
+    yearLength: "558 Tahun Bumi",
+    funFact: "Eris memiliki satu bulan yang bernama Dysnomia, dan permukaannya diselimuti lapisan es nitrogen mengkilap.",
+    moons: [
+      { name: "Dysnomia", radius: 0.8, distance: 8, speed: 10, color: "#8B959A", description: "Satu-satunya bulan pendamping Eris." }
+    ]
   },
   { 
     name: "Komet Halley", 
